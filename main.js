@@ -1,4 +1,4 @@
-
+var die = 0;
 var cubeRotation = 0.0;
 var no_coins_l=Math.round(Math.random()*200)+100;
 var no_coins_r=Math.round(Math.random()*200)+100;
@@ -6,6 +6,9 @@ var no_coins_m=Math.round(Math.random()*200)+100;
 var coinsl=[];
 var coinsr=[];
 var coinsm=[];
+var jhadi=[];
+var walls=[];
+var sb=[];
 var player_speed=0.4;
 main();
 function main() {
@@ -76,6 +79,37 @@ function main() {
   		placement+=x;
   	}
   }
+  placement=0;
+  for(var i=0;i<6;)
+  {
+  	if(Math.random()*40<1)
+  	{
+		jhadi.push(new jhadiya(gl,[(i%3-1)*5,-0.5,-placement*3]));
+		i++;
+  	}
+		placement++;
+  }
+  placement=0;
+  for(var i=0;i<5;)
+  {
+  	if(Math.random()*48<1)
+  	{
+		walls.push(new wall(gl,[-(i%3-1)*5,-0.5,-placement*3]));
+		i++;
+  	}
+		placement++;
+  }
+  placement=0;
+  for(var i=0;i<8;)
+  {
+  	if(Math.random()*32<1)
+  	{
+		sb.push(new speedbreaker(gl,[((i+1)%3-1)*5,-0.5,-placement*3]));
+		i++;
+  	}
+		placement++;
+  }
+
   // If we don't have a GL context, give up now
 
   if (!gl) {
@@ -136,7 +170,7 @@ function main() {
 
   var then = 0;
 
-  // Draw the scene repeatedly
+  // Draw the scene repeatedlyzz
   function render(now) {
     now *= 0.001;  // convert to seconds
     const deltaTime = now - then;
@@ -182,6 +216,29 @@ function tick()
     	if(body.pos[0] == coinsr[i].pos[0] && (body.pos[2] - coinsr[i].pos[2]) < 0.1)
     	{
     		coinsr.splice(i,1);
+    	}
+    }
+    for(var i=0;i<sb.length;i++)
+    {
+    	if(body.pos[0] == sb[i].pos[0] && (body.pos[2] - sb[i].pos[2]) < 0.1 && (body.pos[2] - sb[i].pos[2]) > -0.1 && (body.pos[1] - sb[i].pos[1]) < 0.3 && (body.pos[1] - sb[i].pos[1]) > -0.3)
+    	{
+    		player_speed = parseFloat(player_speed/2);
+    		console.log(player_speed);
+    	}
+    }
+    for(var i=0;i<jhadi.length;i++)
+    {
+    	if(body.pos[0] == jhadi[i].pos[0] && modulus(body.pos[2] - jhadi[i].pos[2]) < 0.1 && modulus(body.pos[1] - sb[i].pos[1]) < 0.3)
+    	{
+    		player_speed = parseFloat(player_speed/2);
+    	}
+    }
+    for(var i=0;i<walls.length;i++)
+    {
+    	if(body.pos[0] == walls[i].pos[0] && modulus(body.pos[2] - walls[i].pos[2]) < 0.1)
+    	{
+    		die =1;
+    		console.log(die);
     	}
     }
 }
@@ -240,13 +297,20 @@ function drawScene(gl, programInfo, deltaTime) {
     var viewProjectionMatrix = mat4.create();
 
   mat4.multiply(viewProjectionMatrix, projectionMatrix, viewMatrix);
-  trackl.draw(gl, viewProjectionMatrix, programInfo, deltaTime);
   for(var i=0;i<coinsl.length;i++)
     coinsl[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
   for(var i=0;i<coinsm.length;i++)
     coinsm[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
   for(var i=0;i<coinsr.length;i++)
     coinsr[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
+  for(var i=0;i<jhadi.length;i++)
+    jhadi[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
+  for(var i=0;i<walls.length;i++)
+    walls[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
+  for(var i=0;i<sb.length;i++)
+    sb[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
+  
+  trackl.draw(gl, viewProjectionMatrix, programInfo, deltaTime);
   trackm.draw(gl, viewProjectionMatrix, programInfo, deltaTime);
   trackr.draw(gl, viewProjectionMatrix, programInfo, deltaTime);
   head.drawCube(gl, viewProjectionMatrix, programInfo, deltaTime);
