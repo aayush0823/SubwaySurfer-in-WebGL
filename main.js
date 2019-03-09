@@ -3,13 +3,27 @@ var cubeRotation = 0.0;
 var no_coins_l=Math.round(Math.random()*200)+100;
 var no_coins_r=Math.round(Math.random()*200)+100;
 var no_coins_m=Math.round(Math.random()*200)+100;
-var coinsl=[];
-var coinsr=[];
-var coinsm=[];
-var jhadi=[];
+var coin=[];
+var bush=[];
 var walls=[];
+var boots=[];
 var sb=[];
+var jets=[];
 var player_speed=0.4;
+var high_jump=0;
+var jet_pack=0;
+var count_jump=0;
+var count_jet=0;
+var score=0;
+
+var track_texture;
+var door_texture;
+var side_texture;
+var boot_texture;
+var breaker_texture;
+var grass_texture;
+var jet_texture;
+var prevgrey = grey;
 main();
 function main() {
 
@@ -20,8 +34,23 @@ function main() {
   trackl = new track(gl ,[ -5,0 , 0.8 , 0 ]);
   trackm = new track(gl ,[ 0,0 , 0.8 , 0 ]);
   trackr = new track(gl ,[ 5,0 , 0.8 , 0 ]);
-  head = new cube(gl, [0.0, 0.0, -2.0],"head");
-  body = new cube(gl, [0.0, -0.8, -2.0],"body");
+  lwall = new swall(gl ,[ 0,0 , 0.8 , 0 ],1);
+  rwall = new swall(gl ,[ 0,0 , 0.8 , 0 ],0);
+
+  head = new cube(gl, [0.0, 0.0, -2.0],1,0);
+  body = new cube(gl, [0.0, -0.8, -2.0],2,0);
+
+  heade = new cube(gl, [0.0, 0.0, 0.0],1,1);
+  bodye = new cube(gl, [0.0, -1.0, 0.0],2,1);
+
+  track_texture = loadTexture(gl, "./data/images/track.jpg");
+  door_texture = loadTexture(gl, "./data/images/door.jpg");
+  side_texture = loadTexture(gl, "./data/images/side.jpeg");
+  boot_texture = loadTexture(gl, "./data/images/shoe.jpeg");
+  breaker_texture = loadTexture(gl, "./data/images/speed.png");
+  grass_texture = loadTexture(gl, "./data/images/grass.jpeg");
+  jet_texture = loadTexture(gl, "./data/images/jetpack.jpeg");
+
   var placement = 0;
   for(var i=0;i<no_coins_l;)
   {
@@ -30,7 +59,7 @@ function main() {
   	{
   		for(var j=0;j<x && i<no_coins_l;j++)
   		{
-    		coinsl.push(new coins(gl,[-5.0,-0.5,-placement*3]));
+    		coin.push(new coins(gl,[-5.0,-0.5,-placement*3]));
     		placement++;
     		i++;
   		}
@@ -49,7 +78,7 @@ function main() {
   	{
   		for(var j=0;j<x && i<no_coins_r;j++)
   		{
-    		coinsr.push(new coins(gl,[5.0,-0.5,-placement*3]));
+    		coin.push(new coins(gl,[5.0,-0.5,-placement*3]));
     		placement++;
     		i++;
   		}
@@ -68,7 +97,7 @@ function main() {
   	{
   		for(var j=0;j<x && i<no_coins_m;j++)
   		{
-    		coinsm.push(new coins(gl,[0,-0.5,-placement*3]));
+    		coin.push(new coins(gl,[0,-0.5,-placement*3]));
     		placement++;
     		i++;
   		}
@@ -80,11 +109,31 @@ function main() {
   	}
   }
   placement=0;
-  for(var i=0;i<6;)
+  for(var i=0;i<15;)
   {
   	if(Math.random()*40<1)
   	{
-		jhadi.push(new jhadiya(gl,[(i%3-1)*5,-0.5,-placement*3]));
+		bush.push(new speedbreaker(gl,[(i%3-1)*5,-1.0,-placement*3]));
+		i++;
+  	}
+		placement++;
+  }
+  placement=0;
+  for(var i=0;i<15;)
+  {
+  	if(Math.random()*48<1)
+  	{
+		walls.push(new wall(gl,[-(i%3-1)*5,0.5,-placement*3]));
+		i++;
+  	}
+		placement++;
+  }
+  placement=0;
+  for(var i=0;i<15;)
+  {
+  	if(Math.random()*32<1)
+  	{
+		sb.push(new speedbreaker(gl,[((i+1)%3-1)*5,-1.0,-placement*3]));
 		i++;
   	}
 		placement++;
@@ -92,19 +141,20 @@ function main() {
   placement=0;
   for(var i=0;i<5;)
   {
-  	if(Math.random()*48<1)
+  	 if(Math.random()*70<1)
   	{
-		walls.push(new wall(gl,[-(i%3-1)*5,-0.5,-placement*3]));
+		boots.push(new boot(gl,[((i+1)%3-1)*5,0.0,-placement*3]));
 		i++;
   	}
 		placement++;
   }
+
   placement=0;
-  for(var i=0;i<8;)
+  for(var i=0;i<5;)
   {
-  	if(Math.random()*32<1)
+  	 if(Math.random()*70<1)
   	{
-		sb.push(new speedbreaker(gl,[((i+1)%3-1)*5,-0.5,-placement*3]));
+		jets.push(new jet(gl,[((i+1)%3-1)*5,0.0,-placement*3]));
 		i++;
   	}
 		placement++;
@@ -144,9 +194,32 @@ function main() {
     }
   `;
 
+
+  const vsSourceTexture = `
+    attribute vec4 aVertexPosition;
+    attribute vec2 aTextureCoord;
+    uniform mat4 uModelViewMatrix;
+    uniform mat4 uProjectionMatrix;
+    varying highp vec2 vTextureCoord;
+    void main(void) {
+      gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+      vTextureCoord = aTextureCoord;
+    }
+  `;
+
+  // Fragment shader program
+
+  const fsSourceTexture = `
+    varying highp vec2 vTextureCoord;
+    uniform sampler2D uSampler;
+    void main(void) {
+      gl_FragColor = texture2D(uSampler, vTextureCoord);
+    }
+  `;
   // Initialize a shader program; this is where all the lighting
   // for the vertices and so forth is established.
   const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+  const shaderProgramTexture = initShaderProgram(gl, vsSourceTexture, fsSourceTexture);
 
   // Collect all the info needed to use the shader program.
   // Look up which attributes our shader program is using
@@ -164,6 +237,19 @@ function main() {
     },
   };
 
+  const programInfoTexture = {
+    program: shaderProgramTexture,
+    attribLocations: {
+      vertexPosition: gl.getAttribLocation(shaderProgramTexture, 'aVertexPosition'),
+      textureCoord: gl.getAttribLocation(shaderProgramTexture, 'aTextureCoord'),
+    },
+    uniformLocations: {
+      projectionMatrix: gl.getUniformLocation(shaderProgramTexture, 'uProjectionMatrix'),
+      modelViewMatrix: gl.getUniformLocation(shaderProgramTexture, 'uModelViewMatrix'),
+      uSampler: gl.getUniformLocation(shaderProgramTexture, 'uSampler'),
+    },
+};
+  
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
   //const buffers
@@ -172,12 +258,18 @@ function main() {
 
   // Draw the scene repeatedlyzz
   function render(now) {
+  	if(prevgrey != grey)
+  	{
+		convertToGrey(gl,grey);
+		prevgrey=grey;
+  	}
     now *= 0.001;  // convert to seconds
     const deltaTime = now - then;
     then = now;
 
-    drawScene(gl, programInfo, deltaTime);
+    drawScene(gl, programInfo, programInfoTexture, deltaTime);
     tick();
+    collision_detection();
     requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
@@ -186,64 +278,118 @@ function main() {
 //
 // Draw the scene.
 //
-trackl.pos[1]=head.pos[1]-2.5;
-trackr.pos[1]=head.pos[1]-2.5;
-trackm.pos[1]=head.pos[1]-2.5;
+trackl.pos[1]=head.pos[1]-1.5;
+trackr.pos[1]=head.pos[1]-1.5;
+trackm.pos[1]=head.pos[1]-1.5;
 
 function tick()
 {
-    head.pos[2]-=player_speed;
-    head.pos[0]=5*track_mul;
-    body.pos[2]=head.pos[2];
-    body.pos[1]=head.pos[1]-0.8;
-    body.pos[0]=head.pos[0];
-    for(var i=0;i<coinsl.length;i++)
+	if(jet_pack==1)
+		count_jet += 0.001;
+	if(count_jet>1)
+	{
+		count_jet=0;
+		jet_pack=0;
+		for(var j=0;j<coin.length;j++)
+    			coin[j].pos[1]=-0.5;
+    	head.pos[1]=0;
+    	console.log("done")
+	}
+	if(high_jump==1)
+		count_jump += 0.001;
+	if(count_jump>1)
+	{
+		count_jump=0;
+		high_jump=0;
+	}
+	if(high_jump==1 && jet_pack==0)
+	{
+		if(head.pos[1]>6.0)
+			jump=-1;
+	}
+	else if(head.pos[1]>3.0 && jet_pack == 0 )
+		jump=-1;
+
+	if(jet_pack==1)
+		head.pos[1]=6.0;
+
+	if(head.pos[1]<0.0)
+	{
+		head.pos[1]=0;
+		jump=0;
+	}
+	head.pos[1] += 0.15*(jump*(high_jump+1));
+    head.pos[2] -= player_speed;
+    head.pos[0] = 5*track_mul;
+    body.pos[2] = head.pos[2];
+    body.pos[1] = head.pos[1]-0.8;
+    body.pos[0] = head.pos[0];
+
+    heade.pos[2]-=player_speed*0.95;
+    heade.pos[0]=5*track_mul;
+    bodye.pos[2]=heade.pos[2];
+    bodye.pos[1]=heade.pos[1]-1.0;
+    bodye.pos[0]=heade.pos[0];
+}
+function collision_detection()
+{
+    for(var i=0;i<coin.length;i++)
     {
-    	if(body.pos[0] == coinsl[i].pos[0] && (body.pos[2] - coinsl[i].pos[2]) < 0.1)
+    	if(body.pos[0] == coin[i].pos[0] && (body.pos[2] - coin[i].pos[2]) < 0.2 && (body.pos[2] - coin[i].pos[2]) > -0.2)
     	{
-    		coinsl.splice(i,1);
-    	}
-    }
-    for(var i=0;i<coinsm.length;i++)
-    {
-    	if(body.pos[0] == coinsm[i].pos[0] && (body.pos[2] - coinsm[i].pos[2]) < 0.1)
-    	{
-    		coinsm.splice(i,1);
-    	}
-    }
-    for(var i=0;i<coinsr.length;i++)
-    {
-    	if(body.pos[0] == coinsr[i].pos[0] && (body.pos[2] - coinsr[i].pos[2]) < 0.1)
-    	{
-    		coinsr.splice(i,1);
+    		coin.splice(i,1);
+    		score++;
+    		document.getElementById("mark").innerHTML="Your Score:" + score;
     	}
     }
     for(var i=0;i<sb.length;i++)
     {
-    	if(body.pos[0] == sb[i].pos[0] && (body.pos[2] - sb[i].pos[2]) < 0.1 && (body.pos[2] - sb[i].pos[2]) > -0.1 && (body.pos[1] - sb[i].pos[1]) < 0.3 && (body.pos[1] - sb[i].pos[1]) > -0.3)
+    	if(body.pos[0] == sb[i].pos[0] && (body.pos[2] - sb[i].pos[2]) < 0.2 && (body.pos[2] - sb[i].pos[2]) > -0.2 && (body.pos[1] - sb[i].pos[1]) < 0.7 && (body.pos[1] - sb[i].pos[1]) > -0.7)
     	{
-    		player_speed = parseFloat(player_speed/2);
-    		console.log(player_speed);
+    		console.log("speedbreaker");
+    		heade.pos[2]=head.pos[2] + 1.0;
     	}
     }
-    for(var i=0;i<jhadi.length;i++)
+    for(var i=0;i<bush.length;i++)
     {
-    	if(body.pos[0] == jhadi[i].pos[0] && modulus(body.pos[2] - jhadi[i].pos[2]) < 0.1 && modulus(body.pos[1] - sb[i].pos[1]) < 0.3)
+    	if(body.pos[0] == bush[i].pos[0] && (body.pos[2] - bush[i].pos[2]) < 0.2 && (body.pos[2] - bush[i].pos[2]) > -0.2 && (body.pos[1] - sb[i].pos[1]) < 0.5 && (body.pos[1] - sb[i].pos[1]) > -0.5)
     	{
-    		player_speed = parseFloat(player_speed/2);
+    		console.log("bush");
+    		heade.pos[2]=head.pos[2]+1.0;
     	}
     }
     for(var i=0;i<walls.length;i++)
     {
-    	if(body.pos[0] == walls[i].pos[0] && modulus(body.pos[2] - walls[i].pos[2]) < 0.1)
+    	if(body.pos[0] == walls[i].pos[0] && (body.pos[2] - walls[i].pos[2]) < 0.2 && (body.pos[2] - walls[i].pos[2]) > -0.2)
     	{
     		die =1;
     		console.log(die);
     	}
     }
+    for(var i=0;i<boots.length;i++)
+    {
+    	if(body.pos[0] == boots[i].pos[0] && (body.pos[2] - boots[i].pos[2]) < 0.2 && (body.pos[2] - boots[i].pos[2]) > -0.2)
+    	{
+    		high_jump=1;
+    		boots.splice(i,1);
+    		console.log(high_jump);
+    	}
+    }
+    for(var i=0;i<jets.length;i++)
+    {
+    	if(body.pos[0] == jets[i].pos[0] && (body.pos[2] - jets[i].pos[2]) < 0.2 && (body.pos[2] - jets[i].pos[2]) > -0.2)
+    	{
+    		jet_pack=1;
+    		jets.splice(i,1);
+    		console.log(jet_pack);
+    		head.pos[1]=6;
+    		for(var j=0;j<coin.length;j++)
+    			coin[j].pos[1]=5.5;
+    	}
+    }
 }
 
-function drawScene(gl, programInfo, deltaTime) {
+function drawScene(gl, programInfo, programInfoTexture, deltaTime) {
   gl.clearColor(150/255,1.0, 1.0, 1.0);  // Clear to black, fully opaque
   gl.clearDepth(1.0);                 // Clear everything
   gl.enable(gl.DEPTH_TEST);           // Enable depth testing
@@ -295,28 +441,31 @@ function drawScene(gl, programInfo, deltaTime) {
     //mat4.invert(viewMatrix, cameraMatrix);
 
     var viewProjectionMatrix = mat4.create();
+    
 
   mat4.multiply(viewProjectionMatrix, projectionMatrix, viewMatrix);
-  for(var i=0;i<coinsl.length;i++)
-    coinsl[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
-  for(var i=0;i<coinsm.length;i++)
-    coinsm[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
-  for(var i=0;i<coinsr.length;i++)
-    coinsr[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
-  for(var i=0;i<jhadi.length;i++)
-    jhadi[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
-  for(var i=0;i<walls.length;i++)
-    walls[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
-  for(var i=0;i<sb.length;i++)
-    sb[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
-  
-  trackl.draw(gl, viewProjectionMatrix, programInfo, deltaTime);
-  trackm.draw(gl, viewProjectionMatrix, programInfo, deltaTime);
-  trackr.draw(gl, viewProjectionMatrix, programInfo, deltaTime);
-  head.drawCube(gl, viewProjectionMatrix, programInfo, deltaTime);
+  rwall.draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime,side_texture);
+  lwall.draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime,side_texture);
+  trackr.draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime, track_texture);
+  trackl.draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime, track_texture);
+  trackm.draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime, track_texture);
   body.drawCube(gl, viewProjectionMatrix, programInfo, deltaTime);
-  //c1.drawCube(gl, projectionMatrix, programInfo, deltaTime);
-
+  head.drawCube(gl, viewProjectionMatrix, programInfo, deltaTime);
+  bodye.drawCube(gl, viewProjectionMatrix, programInfo, deltaTime);
+  heade.drawCube(gl, viewProjectionMatrix, programInfo, deltaTime);
+  
+  for(var i=0;i<coin.length;i++)
+    coin[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
+  for(var i=0;i<bush.length;i++)
+    bush[i].draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime,grass_texture);
+  for(var i=0;i<walls.length;i++)
+    walls[i].drawWall(gl, viewProjectionMatrix, programInfoTexture, deltaTime,door_texture);
+  for(var i=0;i<sb.length;i++)
+    sb[i].draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime, breaker_texture);
+  for(var i=0;i<boots.length;i++)
+    boots[i].draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime,boot_texture);
+  for(var i=0;i<jets.length;i++)
+    jets[i].draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime,jet_texture);
 }
 
 //
@@ -367,4 +516,27 @@ function loadShader(gl, type, source) {
   }
 
   return shader;
+}
+
+function convertToGrey(gl,type){
+	if(type==1)
+	{
+		track_texture = loadTexture(gl, "./data/images/track.jpg");
+		  door_texture = loadTexture(gl, "./data/images/graydoor.jpg");
+		  side_texture = loadTexture(gl, "./data/images/grayside.png");
+		  boot_texture = loadTexture(gl, "./data/images/grayshoe.png");
+		  breaker_texture = loadTexture(gl, "./data/images/grayspeed.png");
+		  grass_texture = loadTexture(gl, "./data/images/graygrass.jpg");
+		  jet_texture = loadTexture(gl, "./data/images/grayjetpack.jpg");	
+	}
+	else
+	{
+  		track_texture = loadTexture(gl, "./data/images/track.jpg");
+  		door_texture = loadTexture(gl, "./data/images/door.jpg");
+  		side_texture = loadTexture(gl, "./data/images/side.jpeg");
+  		boot_texture = loadTexture(gl, "./data/images/shoe.jpeg");
+  		breaker_texture = loadTexture(gl, "./data/images/speed.png");
+  		grass_texture = loadTexture(gl, "./data/images/grass.jpeg");
+ 		jet_texture = loadTexture(gl, "./data/images/jetpack.jpeg");
+	}
 }

@@ -1,17 +1,25 @@
 /// <reference path="webgl.d.ts" />
 
 let cube = class {
-    constructor(gl, pos,whichPart) {
+    constructor(gl, pos,part,num) {
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
         var multiplier=1.0
-        if(whichPart=="head")
+        if(part == 1 && num==0)
         {
             multiplier=0.25;
         }
-        else if(whichPart=="body")
+        else if(part == 2 && num==0)
         {
             multiplier=0.6;
+        }
+        else if(part == 1 && num==1)
+        {
+            multiplier=0.3;
+        }
+        else if(part == 2 && num==1)
+        {
+            multiplier=0.75;
         }
         this.positions = [
              // Front face
@@ -54,7 +62,7 @@ let cube = class {
         this.pos = pos;
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.positions), gl.STATIC_DRAW);
-        if(whichPart=="head")
+        if(part==1)
         {
             this.faceColors = [
                 [ 1.0, 0.8,0.6 , 1.0],
@@ -65,16 +73,27 @@ let cube = class {
                 [ 1.0, 0.8,0.6 , 1.0],
             ];
         }
-        else if(whichPart=="body")
+        else if(num==0)
         {
             this.faceColors = [
 
-                [1.0,0.0,0.0,1.0],
-                [1.0,0.0,0.0,1.0],
-                [1.0,0.0,0.0,1.0],
-                [1.0,0.0,0.0,1.0],
-                [1.0,0.0,0.0,1.0],
-                [1.0,0.0,0.0,1.0],
+	            [0.0,1.0,0.0,1.0],
+                [0.0,1.0,0.0,1.0],
+                [0.0,1.0,0.0,1.0],
+                [0.0,1.0,0.0,1.0],
+                [0.0,1.0,0.0,1.0],
+                [0.0,1.0,0.0,1.0],
+            ];
+        }
+        else if(num==1)
+        {
+            this.faceColors = [
+                [0.0,0.0,1.0,1.0],
+                [0.0,0.0,1.0,1.0],
+                [0.0,0.0,1.0,1.0],
+                [0.0,0.0,1.0,1.0],
+                [0.0,0.0,1.0,1.0],
+                [0.0,0.0,1.0,1.0],
             ];
         }
 

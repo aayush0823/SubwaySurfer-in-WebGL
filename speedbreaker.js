@@ -30,12 +30,12 @@ let speedbreaker = class {
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.positions), gl.STATIC_DRAW);
         this.faceColors = [
-            [1.0,0.0,0.0,1.0],
-            [1.0,0.0,0.0,1.0],
-            [1.0,0.0,0.0,1.0],
-            [1.0,0.0,0.0,1.0],
-            [1.0,0.0,0.0,1.0],
-            [1.0,0.0,0.0,1.0],
+            [0.0,0.0,1.0,1.0],
+            [0.0,0.0,1.0,1.0],
+            [0.0,0.0,1.0,1.0],
+            [0.0,0.0,1.0,1.0],
+            [0.0,0.0,1.0,1.0],
+            [0.0,0.0,1.0,1.0],
         ];
     
         var colors = [];
@@ -53,6 +53,44 @@ let speedbreaker = class {
 
         // Build the element array buffer; this specifies the indices
         // into the vertex arrays for each face's vertices.
+        const textureCoordBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+
+          const textureCoordinates = [
+            // Front
+            0.0,  0.0,
+            1.0,  0.0,
+            1.0,  1.0,
+            0.0,  1.0,
+            // Back
+            0.0,  0.0,
+            1.0,  0.0,
+            1.0,  1.0,
+            0.0,  1.0,
+            // Top
+            0.0,  0.0,
+            1.0,  0.0,
+            1.0,  1.0,
+            0.0,  1.0,
+            // Bottom
+            0.0,  0.0,
+            1.0,  0.0,
+            1.0,  1.0,
+            0.0,  1.0,
+            // Right
+            0.0,  0.0,
+            1.0,  0.0,
+            1.0,  1.0,
+            0.0,  1.0,
+            // Left
+            0.0,  0.0,
+            1.0,  0.0,
+            1.0,  1.0,
+            0.0,  1.0,
+          ];
+
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates),
+    gl.STATIC_DRAW);
 
         const indexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
@@ -78,11 +116,12 @@ let speedbreaker = class {
             position: this.positionBuffer,
             color: colorBuffer,
             indices: indexBuffer,
+            textures: textureCoordBuffer,
         }
 
     }
 
-    draw(gl, projectionMatrix, programInfo, deltaTime) {
+    draw(gl, projectionMatrix, programInfo, deltaTime,texture) {
         const modelViewMatrix = mat4.create();
         mat4.translate(
             modelViewMatrix,
@@ -117,22 +156,40 @@ let speedbreaker = class {
 
         // Tell WebGL how to pull out the colors from the color buffer
         // into the vertexColor attribute.
+        // {
+        //     const numComponents = 4;
+        //     const type = gl.FLOAT;
+        //     const normalize = false;
+        //     const stride = 0;
+        //     const offset = 0;
+        //     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.color);
+        //     gl.vertexAttribPointer(
+        //         programInfo.attribLocations.vertexColor,
+        //         numComponents,
+        //         type,
+        //         normalize,
+        //         stride,
+        //         offset);
+        //     gl.enableVertexAttribArray(
+        //         programInfo.attribLocations.vertexColor);
+        // }
+
         {
-            const numComponents = 4;
+            const numComponents = 2;
             const type = gl.FLOAT;
             const normalize = false;
             const stride = 0;
             const offset = 0;
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.color);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.textures);
             gl.vertexAttribPointer(
-                programInfo.attribLocations.vertexColor,
+                programInfo.attribLocations.textureCoord,
                 numComponents,
                 type,
                 normalize,
                 stride,
                 offset);
             gl.enableVertexAttribArray(
-                programInfo.attribLocations.vertexColor);
+                programInfo.attribLocations.textureCoord);
         }
 
         // Tell WebGL which indices to use to index the vertices
@@ -152,6 +209,14 @@ let speedbreaker = class {
             programInfo.uniformLocations.modelViewMatrix,
             false,
             modelViewMatrix);
+        // Tell WebGL we want to affect texture unit 0
+          gl.activeTexture(gl.TEXTURE0);
+
+          // Bind the texture to texture unit 0
+          gl.bindTexture(gl.TEXTURE_2D, texture);
+
+          // Tell the shader we bound the texture to texture unit 0
+        gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
         {
             const vertexCount = 18;

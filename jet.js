@@ -1,53 +1,62 @@
 /// <reference path="webgl.d.ts" />
 
-let wall = class {
+let jet = class {
     constructor(gl, pos) {
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
         this.positions = [
              // Front face
-             -1.0, -2.0, 0.2,
-             1.0, -2.0, 0.2,
-             1.0, 2.0, 0.2,
-             -1.0, 2.0, 0.2,
+             -0.2, -0.3, 0.2,
+             0.2, -0.3, 0.2,
+             0.2, 0.3, 0.2,
+             -0.2, 0.3, 0.2,
              //Back Face
-             -1.0, -2.0, -0.2,
-             1.0, -2.0, -0.2,
-             1.0, 2.0, -0.2,
-             -1.0, 2.0, -0.2,
+             -0.2, -0.3, -0.2,
+             0.2, -0.3, -0.2,
+             0.2, 0.3, -0.2,
+             -0.2, 0.3, -0.2,
              //Top Face
-             -1.0, 2.0, -0.2,
-             1.0, 2.0, -0.2,
-             1.0, 2.0, 0.2,
-             -1.0, 2.0, 0.2,
+             -0.2, 0.3, -0.2,
+             0.2, 0.3, -0.2,
+             0.2, 0.3, 0.2,
+             -0.2, 0.3, 0.2,
              //Bottom Face
-             -1.0, -2.0, -0.2,
-             1.0, -2.0, -0.2,
-             1.0, -2.0, 0.2,
-             -1.0, -2.0, 0.2,
+             -0.2, -0.3, -0.2,
+             0.2, -0.3, -0.2,
+             0.2, -0.3, 0.2,
+             -0.2, -0.3, 0.2,
              //Left Face
-             -1.0, -2.0, -0.2,
-             -1.0, 2.0, -0.2,
-             -1.0, 2.0, 0.2,
-             -1.0, -2.0, 0.2,
+             -0.2, -0.3, -0.2,
+             -0.2, 0.3, -0.2,
+             -0.2, 0.3, 0.2,
+             -0.2, -0.3, 0.2,
              //Right Face
-             1.0, -2.0, -0.2,
-             1.0, 2.0, -0.2,
-             1.0, 2.0, 0.2,
-             1.0, -2.0, 0.2,
+             0.2, -0.3, -0.2,
+             0.2, 0.3, -0.2,
+             0.2, 0.3, 0.2,
+             0.2, -0.3, 0.2,
+
+             // Front face
+             0.3, 0.3, 0.2,
+            -0.3, 0.3, 0.2,
+             0.0, 0.6, 0.2,
+             0.0, 0.6, 0.2,
         ];
         this.rotation = 0;
+        for(var i=0;i<this.positions.length;i++)
+            this.positions[i]*=2;
 
         this.pos = pos;
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.positions), gl.STATIC_DRAW);
         this.faceColors = [
-            [ 206/255, 205/255,203/255 , 1.0],
-            [ 206/255, 205/255,203/255 , 1.0],
-            [ 206/255, 205/255,203/255 , 1.0],
-            [ 206/255, 205/255,203/255 , 1.0],
-            [ 206/255, 205/255,203/255 , 1.0],
-            [ 206/255, 205/255,203/255 , 1.0],
+            [0.0,1.0,0.0,1.0],
+            [0.0,1.0,0.0,1.0],
+            [0.0,1.0,0.0,1.0],
+            [0.0,1.0,0.0,1.0],
+            [0.0,1.0,0.0,1.0],
+            [0.0,1.0,0.0,1.0],
+            [1.0,0.0,0.0,1.0],
         ];
         
         var colors = [];
@@ -65,7 +74,9 @@ let wall = class {
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 
-         const textureCoordBuffer = gl.createBuffer();
+        // Build the element array buffer; this specifies the indices
+        // into the vertex arrays for each face's vertices.
+        const textureCoordBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
 
           const textureCoordinates = [
@@ -99,13 +110,15 @@ let wall = class {
             1.0,  0.0,
             1.0,  1.0,
             0.0,  1.0,
+            // Left
+            0.0,  0.0,
+            1.0,  0.0,
+            1.0,  1.0,
+            0.0,  1.0,
           ];
 
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates),
     gl.STATIC_DRAW);
-
-        // Build the element array buffer; this specifies the indices
-        // into the vertex arrays for each face's vertices.
 
         const indexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
@@ -120,7 +133,8 @@ let wall = class {
             8, 9, 10,   8, 10, 11,
             12, 13, 14, 12, 14, 15,
             16, 17, 18, 16, 18, 19,
-            20, 21, 22, 20, 22, 23, 
+            20, 21, 22, 20, 22, 23,
+            24, 25, 26,    24, 26, 27, // front
         ];
 
         // Now send the element array to GL
@@ -138,7 +152,7 @@ let wall = class {
 
     }
 
-    drawWall(gl, projectionMatrix, programInfo, deltaTime,texture) {
+    draw(gl, projectionMatrix, programInfo, deltaTime,texture) {
         const modelViewMatrix = mat4.create();
         mat4.translate(
             modelViewMatrix,
@@ -209,6 +223,7 @@ let wall = class {
                 programInfo.attribLocations.textureCoord);
         }
 
+
         // Tell WebGL which indices to use to index the vertices
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.buffer.indices);
 
@@ -237,7 +252,7 @@ let wall = class {
         gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
         {
-            const vertexCount = 36;
+            const vertexCount = 42;
             const type = gl.UNSIGNED_SHORT;
             const offset = 0;
             gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);

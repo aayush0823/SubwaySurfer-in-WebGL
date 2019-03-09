@@ -1,53 +1,61 @@
 /// <reference path="webgl.d.ts" />
 
-let wall = class {
-    constructor(gl, pos) {
+let swall = class {
+    constructor(gl, pos,side) {
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
         this.positions = [
              // Front face
-             -1.0, -2.0, 0.2,
-             1.0, -2.0, 0.2,
-             1.0, 2.0, 0.2,
-             -1.0, 2.0, 0.2,
+             100.0, -200.0, 5000.0,
+             10.0, -200.0, 5000.0,
+             10.0, 200.0, 5000.0,
+             100.0, 200.0, 5000.0,
              //Back Face
-             -1.0, -2.0, -0.2,
-             1.0, -2.0, -0.2,
-             1.0, 2.0, -0.2,
-             -1.0, 2.0, -0.2,
+             100.0, -200.0, -5000.0,
+             10.0, -200.0, -5000.0,
+             10.0, 200.0, -5000.0,
+             100.0, 200.0, -5000.0,
              //Top Face
-             -1.0, 2.0, -0.2,
-             1.0, 2.0, -0.2,
-             1.0, 2.0, 0.2,
-             -1.0, 2.0, 0.2,
+             100.0, 200.0, -5000.0,
+             10.0, 200.0, -5000.0,
+             10.0, 200.0, 5000.0,
+             100.0, 200.0, 5000.0,
              //Bottom Face
-             -1.0, -2.0, -0.2,
-             1.0, -2.0, -0.2,
-             1.0, -2.0, 0.2,
-             -1.0, -2.0, 0.2,
+             100.0, -200.0, -5000.0,
+             10.0, -200.0, -5000.0,
+             10.0, -200.0, 5000.0,
+             100.0, -200.0, 5000.0,
              //Left Face
-             -1.0, -2.0, -0.2,
-             -1.0, 2.0, -0.2,
-             -1.0, 2.0, 0.2,
-             -1.0, -2.0, 0.2,
+             100.0, -200.0, -5000.0,
+             100.0, 200.0, -5000.0,
+             100.0, 200.0, 5000.0,
+             100.0, -200.0, 5000.0,
              //Right Face
-             1.0, -2.0, -0.2,
-             1.0, 2.0, -0.2,
-             1.0, 2.0, 0.2,
-             1.0, -2.0, 0.2,
+             10.0, -200.0, -5000.0,
+             10.0, 200.0, -5000.0,
+             10.0, 200.0, 5000.0,
+             10.0, -200.0, 5000.0,
         ];
+        if(side==1)
+        {
+            for(var i=0;i<this.positions.length;i++)
+            {
+                if(i%3==0)
+                    this.positions[i] *= -1;
+            }
+        }
         this.rotation = 0;
 
         this.pos = pos;
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.positions), gl.STATIC_DRAW);
         this.faceColors = [
-            [ 206/255, 205/255,203/255 , 1.0],
-            [ 206/255, 205/255,203/255 , 1.0],
-            [ 206/255, 205/255,203/255 , 1.0],
-            [ 206/255, 205/255,203/255 , 1.0],
-            [ 206/255, 205/255,203/255 , 1.0],
-            [ 206/255, 205/255,203/255 , 1.0],
+            [ 1.0, 0.0,0.0 , 1.0],
+            [ 1.0, 0.0,0.0 , 1.0],
+            [ 1.0, 0.0,0.0 , 1.0],
+            [ 1.0, 0.0,0.0 , 1.0],
+            [ 1.0, 0.0,0.0 , 1.0],
+            [ 1.0, 0.0,0.0 , 1.0],
         ];
         
         var colors = [];
@@ -65,7 +73,7 @@ let wall = class {
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 
-         const textureCoordBuffer = gl.createBuffer();
+        const textureCoordBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
 
           const textureCoordinates = [
@@ -138,7 +146,7 @@ let wall = class {
 
     }
 
-    drawWall(gl, projectionMatrix, programInfo, deltaTime,texture) {
+    draw(gl, projectionMatrix, programInfo, deltaTime, texture) {
         const modelViewMatrix = mat4.create();
         mat4.translate(
             modelViewMatrix,
@@ -191,7 +199,7 @@ let wall = class {
         //         programInfo.attribLocations.vertexColor);
         // }
 
-        {
+         {
             const numComponents = 2;
             const type = gl.FLOAT;
             const normalize = false;
@@ -227,8 +235,7 @@ let wall = class {
             false,
             modelViewMatrix);
 
-        // Tell WebGL we want to affect texture unit 0
-          gl.activeTexture(gl.TEXTURE0);
+        gl.activeTexture(gl.TEXTURE0);
 
           // Bind the texture to texture unit 0
           gl.bindTexture(gl.TEXTURE_2D, texture);

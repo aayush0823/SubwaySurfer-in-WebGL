@@ -1,6 +1,6 @@
 /// <reference path="webgl.d.ts" />
 
-let jhadiya = class {
+let bushes = class {
     constructor(gl, pos) {
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
