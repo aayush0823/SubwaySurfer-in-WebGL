@@ -1,20 +1,23 @@
-var die = 0;
 var cubeRotation = 0.0;
 var no_coins_l=Math.round(Math.random()*200)+100;
 var no_coins_r=Math.round(Math.random()*200)+100;
 var no_coins_m=Math.round(Math.random()*200)+100;
 var coin=[];
 var bush=[];
-var walls=[];
+var trains=[];
 var boots=[];
 var sb=[];
 var jets=[];
+var walls=[];
+var magnets=[];
 var player_speed=0.4;
 var high_jump=0;
 var jet_pack=0;
 var count_jump=0;
 var count_jet=0;
 var score=0;
+var magnet_on=0;
+var count_magnet=0;
 
 var track_texture;
 var door_texture;
@@ -23,11 +26,16 @@ var boot_texture;
 var breaker_texture;
 var grass_texture;
 var jet_texture;
+var track_texture;
+var magnet_texture;
 var prevgrey = grey;
+var bright_count = 0;
+var bright_val = 1.0;
 main();
 function main() {
 
-
+  
+  playSound("data/sound/back.mp3", 9999, 0.2, 0);
   const canvas = document.querySelector('#glcanvas');
   const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
@@ -44,14 +52,16 @@ function main() {
   bodye = new cube(gl, [0.0, -1.0, 0.0],2,1);
 
   track_texture = loadTexture(gl, "./data/images/track.jpg");
-  door_texture = loadTexture(gl, "./data/images/door.jpg");
+  train_texture = loadTexture(gl, "./data/images/train.jpeg");
+  door_texture = loadTexture(gl, "./data/images/side.jpg");
   side_texture = loadTexture(gl, "./data/images/side.jpeg");
   boot_texture = loadTexture(gl, "./data/images/shoe.jpeg");
   breaker_texture = loadTexture(gl, "./data/images/speed.png");
   grass_texture = loadTexture(gl, "./data/images/grass.jpeg");
   jet_texture = loadTexture(gl, "./data/images/jetpack.jpeg");
+  magnet_texture = loadTexture(gl, "./data/images/magnet.jpeg");
 
-  var placement = 0;
+  var placement = 10;
   for(var i=0;i<no_coins_l;)
   {
   	var x = Math.random()*10;
@@ -70,7 +80,7 @@ function main() {
   		placement+=x;
   	}
   }
-  placement = 0;
+  placement = 10;
   for(var i=0;i<no_coins_r;)
   {
   	var x = Math.random()*10;
@@ -89,7 +99,7 @@ function main() {
   		placement+=x;
   	}
   }
-  placement = 0;
+  placement = 10;
   for(var i=0;i<no_coins_m;)
   {
   	var x = Math.random()*10;
@@ -108,7 +118,7 @@ function main() {
   		placement+=x;
   	}
   }
-  placement=0;
+  placement=10;
   for(var i=0;i<15;)
   {
   	if(Math.random()*40<1)
@@ -118,17 +128,31 @@ function main() {
   	}
 		placement++;
   }
-  placement=0;
+  placement=10;
   for(var i=0;i<15;)
   {
   	if(Math.random()*48<1)
+  	{
+  		var x=1;
+  		if(i%2==0)
+  			x=-1
+		trains.push(new train(gl,[x*5,0.5,-placement*3]));
+		i++;
+		placement+=10;
+  	}
+		placement++;
+  }
+  placement=10;
+  for(var i=0;i<15;)
+  {
+  	if(Math.random()*42<1)
   	{
 		walls.push(new wall(gl,[-(i%3-1)*5,0.5,-placement*3]));
 		i++;
   	}
 		placement++;
   }
-  placement=0;
+  placement=10;
   for(var i=0;i<15;)
   {
   	if(Math.random()*32<1)
@@ -138,8 +162,8 @@ function main() {
   	}
 		placement++;
   }
-  placement=0;
-  for(var i=0;i<5;)
+  placement=10;
+  for(var i=0;i<10;)
   {
   	 if(Math.random()*70<1)
   	{
@@ -149,12 +173,23 @@ function main() {
 		placement++;
   }
 
-  placement=0;
-  for(var i=0;i<5;)
+  placement=10;
+  for(var i=0;i<10;)
   {
   	 if(Math.random()*70<1)
   	{
 		jets.push(new jet(gl,[((i+1)%3-1)*5,0.0,-placement*3]));
+		i++;
+  	}
+		placement++;
+  }
+
+  placement=10;
+  for(var i=0;i<10;)
+  {
+  	 if(Math.random()*70<1)
+  	{
+		magnets.push(new magnet(gl,[((i+1)%3-1)*5,0.0,-placement*3]));
 		i++;
   	}
 		placement++;
@@ -201,10 +236,16 @@ function main() {
     uniform mat4 uModelViewMatrix;
     uniform mat4 uProjectionMatrix;
     varying highp vec2 vTextureCoord;
+
     void main(void) {
       gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
       vTextureCoord = aTextureCoord;
     }
+    vec4 toGrayscale(in vec4 color) {
+    float average = (color.r + color.g + color.b) / 3.0;
+    return vec4(average, average, average, 1.0);
+  }
+  
   `;
 
   // Fragment shader program
@@ -266,7 +307,8 @@ function main() {
     now *= 0.001;  // convert to seconds
     const deltaTime = now - then;
     then = now;
-
+    if(head.pos[2]>500)
+    	terminate();
     drawScene(gl, programInfo, programInfoTexture, deltaTime);
     tick();
     collision_detection();
@@ -284,6 +326,24 @@ trackm.pos[1]=head.pos[1]-1.5;
 
 function tick()
 {
+	if(player_speed<0.4 && dead==0)
+	{
+		console.log("alive");
+		player_speed+=0.001;
+	}
+	if(magnet_on==1)
+		count_magnet+=0.001;
+	if(count_magnet>1)
+	{
+		count_magnet=0;
+		magnet_on=0;
+	}
+	bright_count+=0.01;
+	if(bright_count>1)
+	{
+		bright_count=0;
+		brightit();
+	}
 	if(jet_pack==1)
 		count_jet += 0.001;
 	if(count_jet>1)
@@ -292,7 +352,7 @@ function tick()
 		jet_pack=0;
 		for(var j=0;j<coin.length;j++)
     			coin[j].pos[1]=-0.5;
-    	head.pos[1]=0;
+    	jump=-1;
     	console.log("done")
 	}
 	if(high_jump==1)
@@ -309,6 +369,20 @@ function tick()
 	}
 	else if(head.pos[1]>3.0 && jet_pack == 0 )
 		jump=-1;
+
+	for(var i=0;i<trains.length;i++)
+	{
+		if((head.pos[2]-trains[i].pos[2])<8.2 && (head.pos[2]-trains[i].pos[2])>-8.2 && head.pos[0]==trains[i].pos[0])
+		{
+			if(head.pos[1]>=4.2 && head.pos[1]<4.7)
+				head.pos[1]=4.2-0.15*(jump*(high_jump+1));
+			else if(head.pos[1]<4.2)
+			{
+				console.log("die");
+				die();
+			}
+		}
+	}
 
 	if(jet_pack==1)
 		head.pos[1]=6.0;
@@ -335,7 +409,13 @@ function collision_detection()
 {
     for(var i=0;i<coin.length;i++)
     {
-    	if(body.pos[0] == coin[i].pos[0] && (body.pos[2] - coin[i].pos[2]) < 0.2 && (body.pos[2] - coin[i].pos[2]) > -0.2)
+    	if(magnet_on==1 && (body.pos[2] - coin[i].pos[2]) < 0.2 && (body.pos[2] - coin[i].pos[2]) > -0.2)
+    	{
+    		coin.splice(i,1);
+    		score++;
+    		document.getElementById("mark").innerHTML="Your Score:" + score;
+    	}
+    	else if(body.pos[0] == coin[i].pos[0] && (body.pos[2] - coin[i].pos[2]) < 0.2 && (body.pos[2] - coin[i].pos[2]) > -0.2)
     	{
     		coin.splice(i,1);
     		score++;
@@ -347,7 +427,13 @@ function collision_detection()
     	if(body.pos[0] == sb[i].pos[0] && (body.pos[2] - sb[i].pos[2]) < 0.2 && (body.pos[2] - sb[i].pos[2]) > -0.2 && (body.pos[1] - sb[i].pos[1]) < 0.7 && (body.pos[1] - sb[i].pos[1]) > -0.7)
     	{
     		console.log("speedbreaker");
-    		heade.pos[2]=head.pos[2] + 1.0;
+    		if(heade.pos[2] - head.pos[2] < 3.5)
+    			die();
+    		else
+    		{
+    			heade.pos[2]=head.pos[2] + 1.0;
+ 	   			player_speed = 0.3
+ 	   		}
     	}
     }
     for(var i=0;i<bush.length;i++)
@@ -355,15 +441,21 @@ function collision_detection()
     	if(body.pos[0] == bush[i].pos[0] && (body.pos[2] - bush[i].pos[2]) < 0.2 && (body.pos[2] - bush[i].pos[2]) > -0.2 && (body.pos[1] - sb[i].pos[1]) < 0.5 && (body.pos[1] - sb[i].pos[1]) > -0.5)
     	{
     		console.log("bush");
-    		heade.pos[2]=head.pos[2]+1.0;
+    		if(heade.pos[2] - head.pos[2] < 3.5)
+    			die();
+    		else
+    		{
+    			heade.pos[2]=head.pos[2]+1.0;
+	    		player_speed = 0.3
+	    	}
     	}
     }
     for(var i=0;i<walls.length;i++)
     {
-    	if(body.pos[0] == walls[i].pos[0] && (body.pos[2] - walls[i].pos[2]) < 0.2 && (body.pos[2] - walls[i].pos[2]) > -0.2)
+    	if(body.pos[0] == walls[i].pos[0] && (body.pos[2] - walls[i].pos[2]) < 0.2 && (body.pos[2] - walls[i].pos[2]) > -0.2 && head.pos[1]<4.2)
     	{
-    		die =1;
-    		console.log(die);
+    		die();
+    		console.log("die");
     	}
     }
     for(var i=0;i<boots.length;i++)
@@ -372,7 +464,16 @@ function collision_detection()
     	{
     		high_jump=1;
     		boots.splice(i,1);
-    		console.log(high_jump);
+    		console.log("boots on");
+    	}
+    }
+    for(var i=0;i<magnets.length;i++)
+    {
+    	if(body.pos[0] == magnets[i].pos[0] && (body.pos[2] - magnets[i].pos[2]) < 0.2 && (body.pos[2] - magnets[i].pos[2]) > -0.2)
+    	{
+    		magnet_on=1;
+    		magnets.splice(i,1);
+    		console.log("magnet on");
     	}
     }
     for(var i=0;i<jets.length;i++)
@@ -458,6 +559,8 @@ function drawScene(gl, programInfo, programInfoTexture, deltaTime) {
     coin[i].draw(gl, viewProjectionMatrix, programInfo, deltaTime);
   for(var i=0;i<bush.length;i++)
     bush[i].draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime,grass_texture);
+  for(var i=0;i<trains.length;i++)
+    trains[i].drawWall(gl, viewProjectionMatrix, programInfoTexture, deltaTime,train_texture);
   for(var i=0;i<walls.length;i++)
     walls[i].drawWall(gl, viewProjectionMatrix, programInfoTexture, deltaTime,door_texture);
   for(var i=0;i<sb.length;i++)
@@ -466,6 +569,8 @@ function drawScene(gl, programInfo, programInfoTexture, deltaTime) {
     boots[i].draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime,boot_texture);
   for(var i=0;i<jets.length;i++)
     jets[i].draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime,jet_texture);
+  for(var i=0;i<magnets.length;i++)
+    magnets[i].draw(gl, viewProjectionMatrix, programInfoTexture, deltaTime,magnet_texture);
 }
 
 //
@@ -522,21 +627,53 @@ function convertToGrey(gl,type){
 	if(type==1)
 	{
 		track_texture = loadTexture(gl, "./data/images/track.jpg");
-		  door_texture = loadTexture(gl, "./data/images/graydoor.jpg");
-		  side_texture = loadTexture(gl, "./data/images/grayside.png");
-		  boot_texture = loadTexture(gl, "./data/images/grayshoe.png");
-		  breaker_texture = loadTexture(gl, "./data/images/grayspeed.png");
-		  grass_texture = loadTexture(gl, "./data/images/graygrass.jpg");
-		  jet_texture = loadTexture(gl, "./data/images/grayjetpack.jpg");	
+		side_texture = loadTexture(gl, "./data/images/grayside.png");
+		boot_texture = loadTexture(gl, "./data/images/grayshoe.png");
+		breaker_texture = loadTexture(gl, "./data/images/grayspeed.png");
+		grass_texture = loadTexture(gl, "./data/images/graygrass.jpg");
+		jet_texture = loadTexture(gl, "./data/images/grayjetpack.jpg");	
+		document.getElementById("glcanvas").style.filter = "grayscale(100%)";
 	}
 	else
 	{
+		document.getElementById("glcanvas").style.filter = "grayscale(0%)";
   		track_texture = loadTexture(gl, "./data/images/track.jpg");
-  		door_texture = loadTexture(gl, "./data/images/door.jpg");
+  		train_texture = loadTexture(gl, "./data/images/train.jpeg");
+  		door_texture = loadTexture(gl, "./data/images/side.jpg");
   		side_texture = loadTexture(gl, "./data/images/side.jpeg");
   		boot_texture = loadTexture(gl, "./data/images/shoe.jpeg");
   		breaker_texture = loadTexture(gl, "./data/images/speed.png");
   		grass_texture = loadTexture(gl, "./data/images/grass.jpeg");
  		jet_texture = loadTexture(gl, "./data/images/jetpack.jpeg");
 	}
+}
+
+function brightit()
+{
+	if(bright_val == 1.0)
+	{
+	 	document.getElementById("glcanvas").style.filter = "brightness(0.6)";
+	 	bright_val = 0.6;
+	}
+	else
+	{
+		bright_val=1.0;
+		document.getElementById("glcanvas").style.filter = "brightness(1.0)";
+	}
+}
+
+function die(){
+	if(dead==0)
+	playSound("data/sound/crash.mp3", 0, 1, 0);
+	dead=1;
+    heade.pos[2]=head.pos[2]+1.0;
+	player_speed = 0;
+	console.log("dead");
+    document.getElementById("mark").innerHTML="Game Over!! Your Final Score:" + score;
+}
+
+function terminate(){
+	dead=1;
+	player_speed = 0;
+    document.getElementById("mark").innerHTML="Congrats!! You Won!! Your Final Score:" + score;
 }

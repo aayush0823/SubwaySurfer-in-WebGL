@@ -1,40 +1,40 @@
 /// <reference path="webgl.d.ts" />
 
-let wall = class {
+let train = class {
     constructor(gl, pos) {
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
         this.positions = [
              // Front face
-             -1.0, -2.0, 0.2,
-             1.0, -2.0, 0.2,
-             1.0, 2.0, 0.2,
-             -1.0, 2.0, 0.2,
+             -1.0, -2.0, 8.2,
+             1.0, -2.0, 8.2,
+             1.0, 2.0, 8.2,
+             -1.0, 2.0, 8.2,
              //Back Face
-             -1.0, -2.0, -0.2,
-             1.0, -2.0, -0.2,
-             1.0, 2.0, -0.2,
-             -1.0, 2.0, -0.2,
+             -1.0, -2.0, -8.2,
+             1.0, -2.0, -8.2,
+             1.0, 2.0, -8.2,
+             -1.0, 2.0, -8.2,
              //Top Face
-             -1.0, 2.0, -0.2,
-             1.0, 2.0, -0.2,
-             1.0, 2.0, 0.2,
-             -1.0, 2.0, 0.2,
+             -1.0, 2.0, -8.2,
+             1.0, 2.0, -8.2,
+             1.0, 2.0, 8.2,
+             -1.0, 2.0, 8.2,
              //Bottom Face
-             -1.0, -2.0, -0.2,
-             1.0, -2.0, -0.2,
-             1.0, -2.0, 0.2,
-             -1.0, -2.0, 0.2,
+             -1.0, -2.0, -8.2,
+             1.0, -2.0, -8.2,
+             1.0, -2.0, 8.2,
+             -1.0, -2.0, 8.2,
              //Left Face
-             -1.0, -2.0, -0.2,
-             -1.0, 2.0, -0.2,
-             -1.0, 2.0, 0.2,
-             -1.0, -2.0, 0.2,
+             -1.0, -2.0, -8.2,
+             -1.0, 2.0, -8.2,
+             -1.0, 2.0, 8.2,
+             -1.0, -2.0, 8.2,
              //Right Face
-             1.0, -2.0, -0.2,
-             1.0, 2.0, -0.2,
-             1.0, 2.0, 0.2,
-             1.0, -2.0, 0.2,
+             1.0, -2.0, -8.2,
+             1.0, 2.0, -8.2,
+             1.0, 2.0, 8.2,
+             1.0, -2.0, 8.2,
         ];
         this.rotation = 0;
 
@@ -64,7 +64,6 @@ let wall = class {
         const colorBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-
          const textureCoordBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
 
@@ -105,6 +104,7 @@ let wall = class {
     gl.STATIC_DRAW);
 
         // Build the element array buffer; this specifies the indices
+
         // into the vertex arrays for each face's vertices.
 
         const indexBuffer = gl.createBuffer();

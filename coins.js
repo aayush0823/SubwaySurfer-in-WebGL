@@ -4,7 +4,7 @@ let coins = class {
     constructor(gl, pos) {
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-        var n = 100;
+        var n = 50;
         var i = 0;
         var angle = Math.PI*2/n;
         this.positions = [];
@@ -152,7 +152,7 @@ let coins = class {
             modelViewMatrix);
 
         {
-            const vertexCount = 3*100;
+            const vertexCount = 3*50;
             const type = gl.UNSIGNED_SHORT;
             const offset = 0;
             gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
